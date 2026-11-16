@@ -2,6 +2,7 @@ import Field from "../common/Field";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../Hooks/useAuth";
+import axios from "axios";
 
 function LoginForm() {
   const navigate = useNavigate();
@@ -10,13 +11,34 @@ function LoginForm() {
     register,
     handleSubmit,
     formState: { errors },
+    setError,
   } = useForm();
 
-  const submitForm = (FormData) => {
-    console.log(FormData);
-    const user = { ...FormData };
-    setAuth({ user });
-    navigate("/");
+  const submitForm = async (FormData) => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_SERVER_BASE_URL}/auth/login`,
+        FormData,
+      );
+
+      if (response.status === 200) {
+        const { token, user } = response.data;
+        if (token) {
+          const authToken = token.token;
+          const refreshToken = token.refreshToken;
+
+          console.log(`Login time auth token: ${authToken}`);
+          setAuth({ user, authToken, refreshToken });
+          navigate("/");
+        }
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setError("root.random", {
+        type: "random",
+        message: `User with email ${FormData.email} not found. Please check your credentials and try again.`,
+      });
+    }
   };
 
   return (
@@ -48,6 +70,7 @@ function LoginForm() {
           className={`auth-input ${!!errors.password ? "border-red-500" : "border-gray-200"}`}
         />
       </Field>
+      <p className="text-red-500">{errors?.root?.random?.message}</p>
 
       <Field>
         <button
