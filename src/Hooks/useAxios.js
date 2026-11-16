@@ -6,7 +6,7 @@ import axios from "axios";
 const useAxios = () => {
   const { auth, setAuth } = useAuth();
   useEffect(() => {
-    api.interceptors.request.use(
+    const requestInterceptor = api.interceptors.request.use(
       (config) => {
         const authToken = auth?.authToken;
         if (authToken) {
@@ -17,7 +17,7 @@ const useAxios = () => {
       (error) => Promise.reject(error),
     );
 
-    api.interceptors.response.use(
+    const responseInterceptor = api.interceptors.response.use(
       (response) => response,
       async (error) => {
         const originalRequest = error.config;
@@ -31,11 +31,21 @@ const useAxios = () => {
             );
             const { token } = response.data;
             console.log(`Refresh time auth token: ${token}`);
+
+            setAuth({ ...auth, authToken: token });
             originalRequest.headers.Authorization = `Bearer ${token}`;
             return axios(originalRequest);
-          } catch (refreshError) {}
+          } catch (refreshError) {
+            throw error;
+          }
         }
+        return Promise.reject(error);
       },
     );
-  }, []);
+    return () => {
+      api.interceptors.request.eject(requestInterceptor);
+      api.interceptors.response.eject(responseInterceptor);
+    };
+  }, [auth.authToken]);
+  return { api };
 };
