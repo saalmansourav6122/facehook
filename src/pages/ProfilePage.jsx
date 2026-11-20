@@ -1,41 +1,42 @@
-import { useState, useEffect } from "react"
+import {useEffect} from "react"
 import  useAuth  from "../Hooks/useAuth.js"
 import useAxios from "../Hooks/useAxios.js"
+import { useProfile } from '../Hooks/useProfile.js'
+import {actions} from '../actions'
+
 const ProfilePage = () => {
-  const [user, setUser] = useState(null)
-  const [posts, setPosts] = useState([])
+  const { state, dispatch } = useProfile();
   const { api } = useAxios()
   const { auth } = useAuth()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+
 
   useEffect(() => {
+    dispatch({type: actions.profile.DATA_FETCHING})
+
     const fetchProfileData = async () => {
-      setLoading(true)
       try {
         const response = await api.get(`${import.meta.env.VITE_SERVER_BASE_URL}/profile/${auth?.user?.id}`)
-        setUser(response?.data?.user)
-        setPosts(response?.data?.posts)
+        if (response.status == 200) {
+          dispatch({ type: actions.profile.DATA_FETCHED, date: response.data})
+       }
       } catch (error) {
         console.error(error)
-        setError(error)
-      } finally {
-        setLoading(false)
-      }
+         dispatch({ type: actions.profile.DATA_FETCH_ERROR, error: error.message})
+      } 
         
     }
     if (auth?.user?.id) {
       fetchProfileData();
     }
-  }, [api, auth?.user?.id]);
+  }, []);
 
- if (loading) {
+ if (state?.loading) {
     return <div>Fetching your Profile data...</div>;
   }
   return (
     <>
-      <div>Welcome {user?.firstName} {user?.lastName}</div>
-      <div>You have {posts.length} posts</div>
+      <div>Welcome {state?.user?.firstName} {state?.user?.lastName}</div>
+      <div>You have {state?.posts?.length || 0} posts</div>
     </>
   )
 }
