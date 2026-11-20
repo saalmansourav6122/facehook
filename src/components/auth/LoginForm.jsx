@@ -1,7 +1,7 @@
 import Field from "../common/Field";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../Hooks/useAuth";
+import useAuth from "../../Hooks/useAuth.js";
 import axios from "axios";
 
 function LoginForm() {

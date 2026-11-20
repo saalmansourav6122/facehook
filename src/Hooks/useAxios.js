@@ -1,32 +1,90 @@
-import { use, useEffect } from "react";
+// import { use, useEffect } from "react";
+// import api from "../api";
+// import { useAuth } from "./useAuth";
+// import axios from "axios";
+
+// const useAxios = () => {
+//   const { auth, setAuth } = useAuth();
+//   useEffect(() => {
+//     const requestInterceptor = api.interceptors.request.use(
+//       (config) => {
+//         const authToken = auth?.authToken;
+//         if (authToken) {
+//           config.headers.Authoriartzation = `Bearer ${authToken}`;
+//         }
+//         return config;
+//       },
+//       (error) => Promise.reject(error),
+//     );
+
+//     const responseInterceptor = api.interceptors.response.use(
+//       (response) => response,
+//       async (error) => {
+//         const originalRequest = error.config;
+//         if (error.response.status === 401 && !originalRequest._retry) {
+//           originalRequest._retry = true;
+//           try {
+//             const refreshToken = auth?.refreshToken;
+//             await axios.post(
+//               `import.meta.env.VITE_SERVER_BASE_URL}/auth/refresh`,
+//               { refreshToken },
+//             );
+//             const { token } = response.data;
+//             console.log(`Refresh time auth token: ${token}`);
+
+//             setAuth({ ...auth, authToken: token });
+//             originalRequest.headers.Authorization = `Bearer ${token}`;
+//             return axios(originalRequest);
+//           } catch (refreshError) {
+//             throw error;
+//           }
+//         }
+//         return Promise.reject(error);
+//       },
+//     );
+//     return () => {
+//       api.interceptors.request.eject(requestInterceptor);
+//       api.interceptors.response.eject(responseInterceptor);
+//     };
+//   }, [auth.authToken]);
+//   return { api };
+// };
+
+// export default useAxios;
+import { useEffect } from "react";
 import api from "../api";
 import { useAuth } from "./useAuth";
 import axios from "axios";
 
 const useAxios = () => {
   const { auth, setAuth } = useAuth();
+
   useEffect(() => {
+    // Request interceptor
     const requestInterceptor = api.interceptors.request.use(
       (config) => {
         const authToken = auth?.authToken;
         if (authToken) {
-          config.headers.Authoriartzation = `Bearer ${authToken}`;
+          config.headers.Authorization = `Bearer ${authToken}`;
         }
         return config;
       },
       (error) => Promise.reject(error),
     );
 
+    // Response interceptor
     const responseInterceptor = api.interceptors.response.use(
       (response) => response,
       async (error) => {
         const originalRequest = error.config;
-        if (error.response.status === 401 && !originalRequest._retry) {
+
+        if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
+
           try {
             const refreshToken = auth?.refreshToken;
-            await axios.post(
-              `import.meta.env.VITE_SERVER_BASE_URL}/auth/refresh`,
+            const response = await axios.post(
+              `${import.meta.env.VITE_SERVER_BASE_URL}/auth/refresh-token`,
               { refreshToken },
             );
             const { token } = response.data;
@@ -34,18 +92,23 @@ const useAxios = () => {
 
             setAuth({ ...auth, authToken: token });
             originalRequest.headers.Authorization = `Bearer ${token}`;
+
             return axios(originalRequest);
           } catch (refreshError) {
-            throw error;
+            return Promise.reject(refreshError);
           }
         }
         return Promise.reject(error);
       },
     );
+
     return () => {
       api.interceptors.request.eject(requestInterceptor);
       api.interceptors.response.eject(responseInterceptor);
     };
-  }, [auth.authToken]);
+  }, [auth, setAuth]);
+
   return { api };
 };
+
+export default useAxios;
