@@ -31,7 +31,23 @@ const profileReducer = (state, action) => {
         error: action.error,
       };
     }
-
+    case actions.profile.USER_DATA_EDITED: {
+      return {
+        ...state,
+        loading: false,
+        user: action.data,
+      };
+    }
+    case actions.profile.IMAGE_UPLOADED: {
+      return {
+        ...state,
+        loading: false,
+        user: {
+          ...state.user,
+          avatar: action.data?.avatar || action.data?.user?.avatar,
+        },
+      };
+    }
     default: {
       return state;
     }
